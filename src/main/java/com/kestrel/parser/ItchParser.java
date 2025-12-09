@@ -40,8 +40,38 @@ public class ItchParser {
 
             //  Later we decode into event here
             // for now just print 
-            System.out.println("MSG TYPE: " + (char)messageType + " LEN: " + length);
+            if (messageType == 'A') {
+                Event e = decodeAddOrder(body);
+                System.out.println("ADD ORDER: id=" + e.orderId + " price=" + e.price + " qty=" + e.quantity);
+            }
+            
         }
         fis.close();
     }
+
+    private Event decodeAddOrder(byte[] body) {
+        ByteBuffer buffer = ByteBuffer.wrap(body);
+        buffer.order(ByteOrder.BIG_ENDIAN);
+    
+        long orderId = buffer.getLong();
+        byte sideByte = buffer.get();
+        int quantity = buffer.getInt();
+        buffer.position(buffer.position() + 8); // skip stock 8 bytes
+        int rawPrice = buffer.getInt();
+    
+        long price = rawPrice; // raw ITCH price, already integer (scaled)
+    
+        Event e = pool.get();
+        byte side = (sideByte == 'B') ? (byte)1 : (byte)0;
+        e.set(orderId, price, quantity, side, (byte)1);
+    
+        return e;
+    }
+
+        // Visible for testing
+    public Event testDecodeAddOrder(byte[] body) {
+        return decodeAddOrder(body);
+    }
+
+    
 }
