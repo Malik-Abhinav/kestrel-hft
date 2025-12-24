@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.kestrel.MatchingEngineTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2025-12-24T01:58:03.298Z" hostname="ABHINAV_LAPTOP" time="0.008">
+<testsuite name="com.kestrel.MatchingEngineTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2025-12-24T02:50:01.346Z" hostname="ABHINAV_LAPTOP" time="0.006">
   <properties/>
-  <testcase name="testBuyMatchesExistingAskFullFill()" classname="com.kestrel.MatchingEngineTest" time="0.004"/>
+  <testcase name="testBuyMatchesExistingAskFullFill()" classname="com.kestrel.MatchingEngineTest" time="0.003"/>
   <testcase name="testNonCrossingOrderGoesToBook()" classname="com.kestrel.MatchingEngineTest" time="0.001"/>
   <testcase name="testBuyPartialFillLeavesRemainderOnBook()" classname="com.kestrel.MatchingEngineTest" time="0.001"/>
   <system-out><![CDATA[]]></system-out>

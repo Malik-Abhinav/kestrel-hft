@@ -21,7 +21,7 @@ dependencies {
 }
 
 application {
-    mainClass = 'com.kestrel.engine.KestrelEngine'
+    mainClass = 'com.kestrel.engine.EngineRunner'
 }
 
 test {
