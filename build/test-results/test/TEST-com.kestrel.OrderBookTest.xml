@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.kestrel.OrderBookTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2025-12-24T02:50:01.353Z" hostname="ABHINAV_LAPTOP" time="0.001">
+<testsuite name="com.kestrel.OrderBookTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2025-12-26T05:33:53.592Z" hostname="ABHINAV_LAPTOP" time="0.0">
   <properties/>
-  <testcase name="testBestBidAndAsk()" classname="com.kestrel.OrderBookTest" time="0.001"/>
+  <testcase name="testBestBidAndAsk()" classname="com.kestrel.OrderBookTest" time="0.0"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>
