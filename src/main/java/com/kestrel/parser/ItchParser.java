@@ -5,73 +5,77 @@ import com.kestrel.core.EventPool;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer; 
-import java.nio.ByteOrder; 
-
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 public class ItchParser {
 
-    private final EventPool pool;
+private final EventPool pool;
 
-    public ItchParser(EventPool pool) {
-        this.pool = pool;
-    }
+public ItchParser(EventPool pool) {
+    this.pool = pool;
+}
 
-    public void parse(String filePath) throws IOException {
-        FileInputStream fis = new FileInputStream(filePath);
+public void parse(String filePath) throws IOException {
+    FileInputStream fis = new FileInputStream(filePath);
 
-        byte[] header = new byte[2]; // length + message type
+    byte[] header = new byte[2]; // length + message type
 
-        while(true){
-            
-            int read = fis.read(header);
-            if (read == -1) {
-                break;
-            }
-
-            int length = Byte.toUnsignedInt(header[0]);
-            byte messageType = header[1];
-
-            byte[] body = new byte[length - 2];
-            int n = fis.read(body);
-            if (n < body.length) {
-                break;
-            }
-
-            //  Later we decode into event here
-            // for now just print 
-            if (messageType == 'A') {
-                Event e = decodeAddOrder(body);
-                System.out.println("ADD ORDER: id=" + e.orderId + " price=" + e.price + " qty=" + e.quantity);
-            }
-            
+    while (true) {
+        int read = fis.read(header);
+        if (read == -1) {
+            break;
         }
-        fis.close();
+
+        int length = Byte.toUnsignedInt(header[0]);
+        byte messageType = header[1];
+
+        byte[] body = new byte[length - 2];
+        int n = fis.read(body);
+        if (n < body.length) {
+            break;
+        }
+
+        if (messageType == 'A') {
+            // decode and trigger callback
+            decodeAddOrder(body);
+        }
     }
 
-    private Event decodeAddOrder(byte[] body) {
-        ByteBuffer buffer = ByteBuffer.wrap(body);
-        buffer.order(ByteOrder.BIG_ENDIAN);
-    
-        long orderId = buffer.getLong();
-        byte sideByte = buffer.get();
-        int quantity = buffer.getInt();
-        buffer.position(buffer.position() + 8); // skip stock 8 bytes
-        int rawPrice = buffer.getInt();
-    
-        long price = rawPrice; // raw ITCH price, already integer (scaled)
-    
-        Event e = pool.get();
-        byte side = (sideByte == 'B') ? (byte)1 : (byte)0;
-        e.set(orderId, price, quantity, side, (byte)1);
-    
-        return e;
-    }
+    fis.close();
+}
 
-        // Visible for testing
-    public Event testDecodeAddOrder(byte[] body) {
-        return decodeAddOrder(body);
-    }
+private Event decodeAddOrder(byte[] body) {
+    ByteBuffer buffer = ByteBuffer.wrap(body);
+    buffer.order(ByteOrder.BIG_ENDIAN);
 
-    
+    long orderId = buffer.getLong();
+    byte sideByte = buffer.get();
+    int quantity = buffer.getInt();
+    buffer.position(buffer.position() + 8); // skip stock 8 bytes
+    int rawPrice = buffer.getInt();
+
+    long price = rawPrice;
+    byte side = (sideByte == 'B') ? (byte)1 : (byte)0;
+
+    // fire callback (used by KestrelEngine override)
+    onAddOrder(side, orderId, price, quantity);
+
+    // still build Event for tests or alternate usage
+    Event e = pool.get();
+    e.set(orderId, price, quantity, side, (byte)1);
+    return e;
+}
+
+// Visible for testing
+public Event testDecodeAddOrder(byte[] body) {
+    return decodeAddOrder(body);
+}
+
+protected void onAddOrder(byte side, long orderId, long price, int qty) {
+    // default: print. KestrelEngine will override this to publish into ring buffer.
+    System.out.println("ADD ORDER id=" + orderId + " price=" + price + " qty=" + qty);
+}
+
+
 }

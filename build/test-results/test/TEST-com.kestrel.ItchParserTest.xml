@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.kestrel.ItchParserTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2025-12-26T05:33:53.571Z" hostname="ABHINAV_LAPTOP" time="0.004">
+<testsuite name="com.kestrel.ItchParserTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2025-12-27T04:11:13.254Z" hostname="ABHINAV_LAPTOP" time="0.002">
   <properties/>
-  <testcase name="testParserLoadsFile()" classname="com.kestrel.ItchParserTest" time="0.004"/>
+  <testcase name="testParserLoadsFile()" classname="com.kestrel.ItchParserTest" time="0.002"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

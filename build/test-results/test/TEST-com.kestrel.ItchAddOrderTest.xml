@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.kestrel.ItchAddOrderTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2025-12-26T05:33:53.563Z" hostname="ABHINAV_LAPTOP" time="0.004">
+<testsuite name="com.kestrel.ItchAddOrderTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2025-12-27T04:11:13.239Z" hostname="ABHINAV_LAPTOP" time="0.012">
   <properties/>
-  <testcase name="testDecodeAddOrder()" classname="com.kestrel.ItchAddOrderTest" time="0.004"/>
-  <system-out><![CDATA[]]></system-out>
+  <testcase name="testDecodeAddOrder()" classname="com.kestrel.ItchAddOrderTest" time="0.012"/>
+  <system-out><![CDATA[ADD ORDER id=12345 price=250000 qty=100
+]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>
