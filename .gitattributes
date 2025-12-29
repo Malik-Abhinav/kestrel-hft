@@ -1,0 +1,8 @@
+*.html linguist-vendored
+*.css linguist-vendored
+*.js linguist-vendored
+*.xml linguist-vendored
+
+# Ensure Java files are counted
+*.java linguist-detectable
+```
