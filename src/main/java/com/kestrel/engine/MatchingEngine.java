@@ -9,9 +9,15 @@ import java.util.List;
 public class MatchingEngine {
 
     private final OrderBook book;
+    private final RedisTradePublisher publisher;
 
     public MatchingEngine(OrderBook book) {
+        this(book, RedisTradePublisher.fromEnv());
+    }
+
+    public MatchingEngine(OrderBook book, RedisTradePublisher publisher) {
         this.book = book;
+        this.publisher = publisher;
     }
 
     public List<Trade> onAddOrder(Event incoming) {
@@ -35,12 +41,14 @@ public class MatchingEngine {
 
             int fillQty = Math.min(buy.quantity, bestAsk.quantity);
 
-            trades.add(new Trade(
+            Trade trade = new Trade(
                     buy.orderId,
                     bestAsk.orderId,
                     bestAskPrice,
                     fillQty
-            ));
+            );
+            trades.add(trade);
+            publisher.publishTrade(trade);
 
             buy.quantity -= fillQty;
             bestAsk.quantity -= fillQty;
@@ -70,12 +78,14 @@ public class MatchingEngine {
 
             int fillQty = Math.min(sell.quantity, bestBid.quantity);
 
-            trades.add(new Trade(
+            Trade trade = new Trade(
                     sell.orderId,
                     bestBid.orderId,
                     bestBidPrice,
                     fillQty
-            ));
+            );
+            trades.add(trade);
+            publisher.publishTrade(trade);
 
             sell.quantity -= fillQty;
             bestBid.quantity -= fillQty;
@@ -92,3 +102,4 @@ public class MatchingEngine {
         return trades;
     }
 }
+
