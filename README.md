@@ -1,60 +1,127 @@
-# Kestrel HFT Engine
+# Kestrel Seat Drop Demo
 
-A low-latency matching engine prototype with a lock-free ring buffer ingest path, an in-memory order book, and Redis trade publishing for downstream consumers. Built to demonstrate systems performance, concurrency, and distributed messaging in a compact Java project.
+Kestrel is a deterministic concert seat allocation demo built to show fair queue-order processing, low-latency event handling, and live observability in a compact Java system. The project is being repositioned from its matching-engine roots into a focused demo for high-demand ticket drops.
 
-## Highlights
+## Problem
 
-- Single-producer/single-consumer ring buffer (Agrona) for event transport
-- Matching engine with price-time priority across bid/ask books
-- ITCH-style parser for add-order messages
-- JMH microbenchmarks for throughput validation
-- Redis trade publisher for distributed trade reporting
-- Dockerized build and compose stack
+High-demand concert sales fail in predictable ways:
+
+- many users try to claim the same small set of premium seats
+- fairness claims are hard to explain without a clear processing model
+- live systems are difficult to observe while the drop is happening
+- once the rush ends, it is hard to replay or reason about what happened
+
+Kestrel focuses on those problems with a narrow, credible story: a front-row concert seat drop where requests enter a waiting-room flow, are processed in deterministic order, and emit live status updates for observers.
+
+## Solution
+
+Kestrel models the seat-drop flow as a processor-centered system:
+
+- users submit reservation attempts for specific seats
+- requests are admitted and processed in deterministic queue order
+- the processor is the source of truth for seat outcomes
+- successful and rejected outcomes are published for live observation
+- the architecture remains small enough to explain clearly in a short demo
+
+The current codebase still contains matching-engine internals that will be migrated over the next milestones. This repository now documents the product and behavioral direction explicitly so future changes stay aligned with the seat-allocation narrative.
+
+## Product Definition
+
+The demo product is a high-demand concert seat allocation system for premium seats.
+
+Core scenario:
+
+- a drop opens for front-row seats
+- users arrive through a waiting-room style flow
+- each user attempts to reserve a specific seat
+- the backend processes requests in deterministic order after admission
+- winners and rejections are visible through a live observation layer
+
+Behavioral claims this repo is moving toward:
+
+- fairness means deterministic queue-order processing after admission
+- the processor decides winners; the UI does not
+- observability is separate from the source of truth
+- replay should preserve outcomes and processing order
+
+## Terminology Plan
+
+User-facing language from this point onward:
+
+- `seat drop` instead of `market session`
+- `reservation request` instead of `order`
+- `reservation result` instead of `trade`
+- `seat inventory` instead of `order book`
+- `live updates` instead of `trade stream`
+- `processor` instead of `matching engine`, where public-facing wording is involved
+
+Internal class names and engine semantics still reflect the earlier prototype. Those changes are intentionally deferred to later milestones so the repo remains runnable while the domain migration happens in small steps.
+
+## Current Technical Shape
+
+Today the implementation still consists of:
+
+- a lock-free single-producer/single-consumer ring buffer ingest path
+- an in-memory matching-style core that will be mapped to seat allocation behavior
+- Redis publication for downstream event observation
+- Dockerized local setup and Gradle-based build/test tasks
+
+This is acceptable for the current milestone because the work so far is a narrative and public-surface rebrand, not a full runtime conversion.
 
 ## Project Layout
 
-- `src/main/java/com/kestrel/engine` Matching engine and runtime entry points
-- `src/main/java/com/kestrel/orderbook` Order book and price levels
-- `src/main/java/com/kestrel/buffer` Ring buffer transport
-- `src/main/java/com/kestrel/parser` ITCH parser
+- `src/main/java/com/kestrel/engine` core runtime and processing entry points
+- `src/main/java/com/kestrel/orderbook` in-memory state structures slated for seat-inventory migration
+- `src/main/java/com/kestrel/buffer` ring buffer transport
+- `src/main/java/com/kestrel/parser` ingest/parsing utilities from the prototype phase
 - `src/jmh/java/com/kestrel/bench` JMH benchmarks
-- `src/test/java/com/kestrel` Unit tests
+- `src/test/java/com/kestrel` unit tests
 
-## Architecture (High Level)
+## Architecture Direction
 
-1) ITCH parser reads events
-2) Producer publishes add orders into a ring buffer
-3) Consumer thread feeds `MatchingEngine`
-4) Trades are emitted to Redis on `kestrel:trades`
+Near-term architecture story:
+
+1. requests enter an admission/waiting-room path
+2. accepted requests are published into the ring buffer
+3. a single processor thread applies deterministic allocation rules
+4. outcomes are emitted to Redis and later to live clients
+
+The current implementation is partway to that target and will be bridged incrementally.
 
 ## Build and Run
 
 ### Local
 
-```powershell
-.\gradlew test
-.\gradlew run
+```bash
+./gradlew test
+./gradlew run
 ```
 
 ### Docker
 
-```powershell
+```bash
 docker compose up --build
 ```
 
-## Redis Trade Stream
+## Event Publication
 
-Trades are published as JSON to `kestrel:trades` when matches occur.
+The current runtime publishes JSON events to Redis. During the transition period, those events still come from matching-style internals, but this channel will become the live reservation update stream for the seat-drop demo.
 
-Example payload:
+Default Redis channel:
+
+```text
+kestrel:trades
+```
+
+Example current payload:
 
 ```json
 {"takerOrderId":10663,"makerOrderId":663,"price":103,"quantity":10}
 ```
 
-Subscribe to the channel:
+Subscribe locally:
 
-```powershell
+```bash
 docker exec -it kestrel-hft-redis-1 redis-cli SUBSCRIBE kestrel:trades
 ```
 
@@ -69,20 +136,17 @@ Environment variables:
 
 Run the JMH suite:
 
-```powershell
-.\gradlew jmh
+```bash
+./gradlew jmh
 ```
 
-Benchmarks include:
+The existing benchmarks validate the performance characteristics of the underlying transport and processing primitives that will support the seat-drop story.
 
-- ring buffer publish/consume throughput
-- matching engine crossing vs non-crossing orders
-- price level queue add/poll performance
+## Why This Project Exists
 
-## Resume-Ready Talking Points
+Kestrel is intended to demonstrate:
 
-- Lock-free SPSC ring buffer ingestion path using Agrona
-- Matching engine with price-time priority and in-memory order book
-- Trade reporting via Redis pub/sub (distributed systems integration)
-- JMH microbenchmarks for latency/throughput characterization
-- Containerized build and deployment workflow
+- deterministic event processing under bursty demand
+- fair outcome reasoning through queue-order semantics
+- separation of source-of-truth processing from observation channels
+- pragmatic distributed systems design in a small, local-first project
