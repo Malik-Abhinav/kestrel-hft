@@ -1,6 +1,6 @@
 # Kestrel Seat Drop Demo
 
-Kestrel is a deterministic concert seat allocation demo built to show fair queue-order processing, low-latency event handling, and live observability in a compact Java system. The project is being repositioned from its matching-engine roots into a recruiter-facing demo for high-demand ticket drops.
+Kestrel is a deterministic concert seat allocation demo built to show fair queue-order processing, low-latency event handling, and live observability in a compact Java system. The project is being repositioned from its matching-engine roots into a focused demo for high-demand ticket drops.
 
 ## Problem
 
@@ -21,7 +21,7 @@ Kestrel models the seat-drop flow as a processor-centered system:
 - requests are admitted and processed in deterministic queue order
 - the processor is the source of truth for seat outcomes
 - successful and rejected outcomes are published for live observation
-- the architecture remains small enough to explain in an interview or demo
+- the architecture remains small enough to explain clearly in a short demo
 
 The current codebase still contains matching-engine internals that will be migrated over the next milestones. This repository now documents the product and behavioral direction explicitly so future changes stay aligned with the seat-allocation narrative.
 
@@ -44,7 +44,7 @@ Behavioral claims this repo is moving toward:
 - observability is separate from the source of truth
 - replay should preserve outcomes and processing order
 
-## Day 1 Terminology Plan
+## Terminology Plan
 
 User-facing language from this point onward:
 
@@ -66,7 +66,7 @@ Today the implementation still consists of:
 - Redis publication for downstream event observation
 - Dockerized local setup and Gradle-based build/test tasks
 
-This is acceptable for the current milestone because Day 1 is a narrative and public-surface rebrand, not a full runtime conversion.
+This is acceptable for the current milestone because the work so far is a narrative and public-surface rebrand, not a full runtime conversion.
 
 ## Project Layout
 

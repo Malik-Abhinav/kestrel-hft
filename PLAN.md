@@ -7,6 +7,11 @@ This file tracks the active migration plan inside the repository so each new wor
 - Day 1 completed on March 11, 2026
 - Current next milestone: Day 2 - Domain Bridge
 
+## Working Rules
+
+- do not use day labels like `Day 1`, `Day 2`, or similar wording in commit messages
+- prefer concise commit messages that describe the actual change
+
 ## Completed Work
 
 ### Day 1: Narrative Rebrand
@@ -122,7 +127,7 @@ Deliverables:
 
 Outcome:
 
-- one-command local demo, coherent story, and polished recruiter-facing presentation
+- one-command local demo, coherent story, and polished presentation
 
 ## Flex Days
 
