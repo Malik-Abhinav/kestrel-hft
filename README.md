@@ -97,6 +97,8 @@ The current implementation is partway to that target and will be bridged increme
 ./gradlew run
 ```
 
+`./gradlew run` now executes the sample seat-drop simulation path and prints reservation outcomes in sequence.
+
 ### Docker
 
 ```bash
