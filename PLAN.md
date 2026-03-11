@@ -5,7 +5,8 @@ This file tracks the active migration plan inside the repository so each new wor
 ## Status
 
 - Day 1 completed on March 11, 2026
-- Current next milestone: Day 2 - Domain Bridge
+- Day 2 completed on March 11, 2026
+- Current next milestone: Day 3 - Processor and Inventory Behavior
 
 ## Working Rules
 
@@ -28,21 +29,21 @@ Completed outcome:
 
 - the repo now reads as a seat-allocation system directionally, even though the runtime migration is still in progress
 
-## Remaining Schedule
-
 ### Day 2: Domain Bridge
 
-Deliverables:
+Completed deliverables:
 
-- reservation-domain types such as `ReservationRequest` and `ReservationResult`
-- seat/user-oriented event payload design
-- initial drop simulation flow in backend terms instead of market terms
-- internal mapping from current engine behavior to seat allocation behavior
-- basic CLI or internal runner path for a seat-drop simulation
+- reservation-domain types added for requests, results, status, and seat definitions
+- seat/user-oriented result payload shape introduced in backend terms
+- seat-drop simulation flow added through a reservation processor and simulation runner
+- internal mapping added from seat reservations to the current matching-engine behavior
+- `./gradlew run` now executes a basic seat-drop simulation path
 
-Outcome:
+Completed outcome:
 
-- backend can describe and process a drop in the new domain, even if nobody can watch it live yet
+- backend can now describe and process a drop in seat-allocation terms, even though the full inventory model and API layer are still pending
+
+## Remaining Schedule
 
 ### Day 3: Processor and Inventory Behavior
 
