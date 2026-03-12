@@ -18,4 +18,8 @@ public class SeatDropSimulation {
         }
         return results;
     }
+
+    public SeatInventory inventory() {
+        return processor.inventory();
+    }
 }
