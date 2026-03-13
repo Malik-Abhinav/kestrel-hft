@@ -3,6 +3,7 @@ package com.kestrel.reservation;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
 
 public class SeatInventory {
 
@@ -57,6 +58,14 @@ public class SeatInventory {
 
     public int totalSeats() {
         return seatsById.size();
+    }
+
+    public List<SeatInventoryEntry> entries() {
+        List<SeatInventoryEntry> entries = new ArrayList<>(seatsById.size());
+        for (MutableSeat seat : seatsById.values()) {
+            entries.add(seat.snapshot());
+        }
+        return entries;
     }
 
     private static final class MutableSeat {
