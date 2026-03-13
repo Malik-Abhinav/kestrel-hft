@@ -7,7 +7,8 @@ This file tracks the active migration plan inside the repository so each new wor
 - Day 1 completed on March 11, 2026
 - Day 2 completed on March 11, 2026
 - Day 3 completed on March 12, 2026
-- Current next milestone: Day 4 - Web Server and API
+- Day 4 completed on March 13, 2026
+- Current next milestone: Day 5 - Live Event Stream
 
 ## Working Rules
 
@@ -58,21 +59,21 @@ Completed outcome:
 
 - the source of truth now behaves like a reservation processor with explicit inventory, not a trading prototype
 
-## Remaining Schedule
-
 ### Day 4: Web Server and API
 
-Deliverables:
+Completed deliverables:
 
-- add Javalin
-- implement `POST /api/drop/start`
-- implement `GET /api/drop/state`
-- choose and lock request/response shapes
-- backend remains runnable without frontend integration
+- Javalin added as the backend web layer
+- `POST /api/drop/start` implemented
+- `GET /api/drop/state` implemented
+- request and response shapes documented in the README
+- backend remains runnable without frontend integration through the HTTP checkpoint
 
-Outcome:
+Completed outcome:
 
-- you can start a drop and inspect state through HTTP, which is a believable standalone checkpoint
+- you can now start a drop and inspect the latest state through HTTP as a standalone backend milestone
+
+## Remaining Schedule
 
 ### Day 5: Live Event Stream
 
