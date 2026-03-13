@@ -5,6 +5,8 @@ import com.kestrel.reservation.ReservationResult;
 import com.kestrel.reservation.ReservationStatus;
 import com.kestrel.reservation.SeatDefinition;
 import com.kestrel.reservation.SeatDropSimulation;
+import com.kestrel.reservation.SeatInventoryEntry;
+import com.kestrel.reservation.SeatInventoryState;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -28,6 +30,11 @@ public class SeatDropSimulationTest {
         assertEquals(ReservationStatus.REJECTED, results.get(1).status());
         assertEquals("A1", results.get(0).seatId());
         assertEquals("A1", results.get(1).seatId());
+
+        SeatInventoryEntry seat = simulation.inventory().getSeat("A1");
+        assertEquals(SeatInventoryState.SOLD, seat.state());
+        assertEquals("User_1", seat.reservedByUserId());
+        assertEquals(1L, seat.winningRequestId());
     }
 
     @Test
@@ -49,5 +56,7 @@ public class SeatDropSimulationTest {
         assertEquals(10, results.get(0).sequence());
         assertEquals(11, results.get(1).sequence());
         assertEquals(12, results.get(2).sequence());
+        assertEquals(2, simulation.inventory().soldCount());
+        assertEquals(0, simulation.inventory().availableCount());
     }
 }

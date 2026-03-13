@@ -23,7 +23,7 @@ public class EngineRunner {
 
         AtomicBoolean running = new AtomicBoolean(true);
 
-        // Consumer thread: matching engine
+        // Legacy consumer thread retained while the reservation-first runtime takes shape.
         Thread consumer = new Thread(() -> {
             while (running.get()) {
                 int n = bus.poll((msgType, side, orderId, price, qty) -> {
@@ -53,6 +53,6 @@ public class EngineRunner {
         running.set(false);
         consumer.join();
 
-        System.out.println("EngineRunner done.");
+        System.out.println("Legacy engine smoke test done.");
     }
 }

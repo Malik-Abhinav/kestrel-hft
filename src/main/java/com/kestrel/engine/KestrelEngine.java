@@ -59,11 +59,11 @@ public void start(String filePath) throws Exception {
 }
 
 public static void main(String[] args) throws Exception {
-    System.out.println("Kestrel Engine Booting...");
+    System.out.println("Kestrel runtime booting...");
     KestrelEngine ke = new KestrelEngine();
 
     // placeholder for now
-    System.out.println("Engine initialized.");
+    System.out.println("Legacy runtime initialized.");
 }
 
 

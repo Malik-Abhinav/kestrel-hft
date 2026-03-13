@@ -1,6 +1,6 @@
 # Kestrel Seat Drop Demo
 
-Kestrel is a deterministic concert seat allocation demo built to show fair queue-order processing, low-latency event handling, and live observability in a compact Java system. The project is being repositioned from its matching-engine roots into a focused demo for high-demand ticket drops.
+Kestrel is a deterministic concert seat allocation demo built to show fair queue-order processing, low-latency event handling, and live observability in a compact Java system. The project now uses an explicit seat inventory and reservation processor as its primary backend path, while older prototype components remain in the repo during the migration.
 
 ## Problem
 
@@ -23,7 +23,7 @@ Kestrel models the seat-drop flow as a processor-centered system:
 - successful and rejected outcomes are published for live observation
 - the architecture remains small enough to explain clearly in a short demo
 
-The current codebase still contains matching-engine internals that will be migrated over the next milestones. This repository now documents the product and behavioral direction explicitly so future changes stay aligned with the seat-allocation narrative.
+The repository still contains older prototype internals that will be migrated over the next milestones. The primary seat-drop path is now expressed directly in reservation terms so future work can extend the product story without leaning on trading semantics.
 
 ## Product Definition
 
@@ -55,23 +55,25 @@ User-facing language from this point onward:
 - `live updates` instead of `trade stream`
 - `processor` instead of `matching engine`, where public-facing wording is involved
 
-Internal class names and engine semantics still reflect the earlier prototype. Those changes are intentionally deferred to later milestones so the repo remains runnable while the domain migration happens in small steps.
+Some legacy package names still reflect the earlier prototype. Those changes are intentionally deferred so the repo remains runnable while the remaining web and live-observation layers are added in small steps.
 
 ## Current Technical Shape
 
 Today the implementation still consists of:
 
-- a lock-free single-producer/single-consumer ring buffer ingest path
-- an in-memory matching-style core that will be mapped to seat allocation behavior
-- Redis publication for downstream event observation
+- an explicit seat inventory model with per-seat sold/available state
+- a reservation processor with first-request-wins allocation behavior
+- a sample seat-drop simulation runner for local verification
+- legacy transport and prototype engine packages that remain available during the migration
 - Dockerized local setup and Gradle-based build/test tasks
 
-This is acceptable for the current milestone because the work so far is a narrative and public-surface rebrand, not a full runtime conversion.
+This is acceptable for the current milestone because the source of truth now behaves like a reservation processor even though the HTTP and live observation layers are still pending.
 
 ## Project Layout
 
+- `src/main/java/com/kestrel/reservation` seat inventory, reservation processor, and simulation runner
 - `src/main/java/com/kestrel/engine` core runtime and processing entry points
-- `src/main/java/com/kestrel/orderbook` in-memory state structures slated for seat-inventory migration
+- `src/main/java/com/kestrel/orderbook` legacy prototype state structures retained during migration
 - `src/main/java/com/kestrel/buffer` ring buffer transport
 - `src/main/java/com/kestrel/parser` ingest/parsing utilities from the prototype phase
 - `src/jmh/java/com/kestrel/bench` JMH benchmarks
@@ -82,11 +84,11 @@ This is acceptable for the current milestone because the work so far is a narrat
 Near-term architecture story:
 
 1. requests enter an admission/waiting-room path
-2. accepted requests are published into the ring buffer
-3. a single processor thread applies deterministic allocation rules
-4. outcomes are emitted to Redis and later to live clients
+2. the reservation processor applies deterministic first-request-wins rules against seat inventory
+3. inventory becomes the source of truth for sold and available seats
+4. HTTP and live observation layers will expose those outcomes in later milestones
 
-The current implementation is partway to that target and will be bridged incrementally.
+The current implementation already follows that source-of-truth model locally and will be exposed incrementally through APIs and live updates.
 
 ## Build and Run
 
@@ -105,34 +107,9 @@ The current implementation is partway to that target and will be bridged increme
 docker compose up --build
 ```
 
-## Event Publication
+## Observation Layer Status
 
-The current runtime publishes JSON events to Redis. During the transition period, those events still come from matching-style internals, but this channel will become the live reservation update stream for the seat-drop demo.
-
-Default Redis channel:
-
-```text
-kestrel:trades
-```
-
-Example current payload:
-
-```json
-{"takerOrderId":10663,"makerOrderId":663,"price":103,"quantity":10}
-```
-
-Subscribe locally:
-
-```bash
-docker exec -it kestrel-hft-redis-1 redis-cli SUBSCRIBE kestrel:trades
-```
-
-Environment variables:
-
-- `REDIS_ENABLED` set to `true` to enable publishing
-- `REDIS_HOST` default `localhost`
-- `REDIS_PORT` default `6379`
-- `REDIS_CHANNEL` default `kestrel:trades`
+The live observation layer is not wired into the reservation processor yet. That work is scheduled for the upcoming API and event-stream milestones, where reservation outcomes will be exposed over HTTP and then broadcast to connected clients.
 
 ## Benchmarks
 

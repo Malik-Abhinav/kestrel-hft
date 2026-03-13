@@ -6,7 +6,8 @@ This file tracks the active migration plan inside the repository so each new wor
 
 - Day 1 completed on March 11, 2026
 - Day 2 completed on March 11, 2026
-- Current next milestone: Day 3 - Processor and Inventory Behavior
+- Day 3 completed on March 12, 2026
+- Current next milestone: Day 4 - Web Server and API
 
 ## Working Rules
 
@@ -43,21 +44,21 @@ Completed outcome:
 
 - backend can now describe and process a drop in seat-allocation terms, even though the full inventory model and API layer are still pending
 
-## Remaining Schedule
-
 ### Day 3: Processor and Inventory Behavior
 
-Deliverables:
+Completed deliverables:
 
-- explicit seat inventory model
-- first-request-wins behavior for a seat
-- rejection behavior for duplicate seat attempts
-- cleanup of core logs and exposed names so HFT leftovers stop appearing
-- tests for seat allocation and rejection rules
+- explicit seat inventory model added with sold and available state
+- first-request-wins behavior made direct in the reservation processor
+- duplicate seat attempts now reject against inventory state instead of a bridge adapter
+- public-facing docs and runtime output scrubbed further so the active path no longer reads like a trading prototype
+- tests now cover inventory state, seat allocation, and rejection behavior
 
-Outcome:
+Completed outcome:
 
-- the source of truth now behaves like a reservation processor, not a trading prototype
+- the source of truth now behaves like a reservation processor with explicit inventory, not a trading prototype
+
+## Remaining Schedule
 
 ### Day 4: Web Server and API
 

@@ -73,8 +73,8 @@ public Event testDecodeAddOrder(byte[] body) {
 }
 
 protected void onAddOrder(byte side, long orderId, long price, int qty) {
-    // default: print. KestrelEngine will override this to publish into ring buffer.
-    System.out.println("ADD ORDER id=" + orderId + " price=" + price + " qty=" + qty);
+    // default: print. KestrelEngine will override this to publish into the buffer path.
+    System.out.println("INGEST EVENT id=" + orderId + " price=" + price + " qty=" + qty);
 }
 
 

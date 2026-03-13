@@ -42,5 +42,9 @@ public class SeatDropRunner {
                 results.size(),
                 soldCount,
                 results.size() - soldCount);
+        System.out.printf("inventoryTotal=%d inventorySold=%d inventoryAvailable=%d%n",
+                simulation.inventory().totalSeats(),
+                simulation.inventory().soldCount(),
+                simulation.inventory().availableCount());
     }
 }
