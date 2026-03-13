@@ -63,7 +63,7 @@ Today the implementation still consists of:
 
 - an explicit seat inventory model with per-seat sold/available state
 - a reservation processor with first-request-wins allocation behavior
-- a sample seat-drop simulation runner for local verification
+- a Javalin API layer for starting a drop and inspecting state
 - legacy transport and prototype engine packages that remain available during the migration
 - Dockerized local setup and Gradle-based build/test tasks
 
@@ -72,6 +72,7 @@ This is acceptable for the current milestone because the source of truth now beh
 ## Project Layout
 
 - `src/main/java/com/kestrel/reservation` seat inventory, reservation processor, and simulation runner
+- `src/main/java/com/kestrel/api` Javalin server and HTTP state management
 - `src/main/java/com/kestrel/engine` core runtime and processing entry points
 - `src/main/java/com/kestrel/orderbook` legacy prototype state structures retained during migration
 - `src/main/java/com/kestrel/buffer` ring buffer transport
@@ -86,9 +87,10 @@ Near-term architecture story:
 1. requests enter an admission/waiting-room path
 2. the reservation processor applies deterministic first-request-wins rules against seat inventory
 3. inventory becomes the source of truth for sold and available seats
-4. HTTP and live observation layers will expose those outcomes in later milestones
+4. the API layer exposes the latest drop state over HTTP
+5. live observation will be added in the next milestone
 
-The current implementation already follows that source-of-truth model locally and will be exposed incrementally through APIs and live updates.
+The current implementation already follows that source-of-truth model and is now accessible through a minimal HTTP surface.
 
 ## Build and Run
 
@@ -99,7 +101,7 @@ The current implementation already follows that source-of-truth model locally an
 ./gradlew run
 ```
 
-`./gradlew run` now executes the sample seat-drop simulation path and prints reservation outcomes in sequence.
+`./gradlew run` now starts the API server on port `7070` by default.
 
 ### Docker
 
@@ -107,9 +109,80 @@ The current implementation already follows that source-of-truth model locally an
 docker compose up --build
 ```
 
+## API Surface
+
+Current endpoints:
+
+- `POST /api/drop/start`
+- `GET /api/drop/state`
+
+Start a drop with the default scenario:
+
+```bash
+curl -X POST http://localhost:7070/api/drop/start
+```
+
+Start a drop with a custom scenario:
+
+```bash
+curl -X POST http://localhost:7070/api/drop/start \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "seats":[
+      {"seatId":"A1","priceCents":15000},
+      {"seatId":"A2","priceCents":15000}
+    ],
+    "requests":[
+      {"requestId":1,"sequence":1,"userId":"User_1","seatId":"A1"},
+      {"requestId":2,"sequence":2,"userId":"User_2","seatId":"A1"}
+    ]
+  }'
+```
+
+Inspect the latest state:
+
+```bash
+curl http://localhost:7070/api/drop/state
+```
+
+Current response shape:
+
+```json
+{
+  "dropId": "drop-1",
+  "status": "COMPLETED",
+  "processedCount": 2,
+  "soldCount": 1,
+  "rejectedCount": 1,
+  "totalSeats": 2,
+  "availableSeats": 1,
+  "seats": [
+    {
+      "seatId": "A1",
+      "priceCents": 15000,
+      "state": "SOLD",
+      "reservedByUserId": "User_1",
+      "winningRequestId": 1,
+      "winningSequence": 1
+    }
+  ],
+  "results": [
+    {
+      "requestId": 1,
+      "sequence": 1,
+      "userId": "User_1",
+      "seatId": "A1",
+      "status": "SOLD",
+      "latencyMicros": 15,
+      "detail": "Seat reserved at 15000 cents"
+    }
+  ]
+}
+```
+
 ## Observation Layer Status
 
-The live observation layer is not wired into the reservation processor yet. That work is scheduled for the upcoming API and event-stream milestones, where reservation outcomes will be exposed over HTTP and then broadcast to connected clients.
+The live observation layer is not wired into the reservation processor yet. That work is next, where reservation outcomes will be published and broadcast to connected clients.
 
 ## Benchmarks
 
