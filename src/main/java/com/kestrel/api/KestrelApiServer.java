@@ -30,6 +30,14 @@ public class KestrelApiServer {
             DropState state = dropStateService.startDrop(request);
             ctx.status(201).json(state);
         });
+        app.post("/api/drop/replay", ctx -> {
+            try {
+                DropState state = dropStateService.replayLastDrop();
+                ctx.status(201).json(state);
+            } catch (IllegalStateException e) {
+                ctx.status(409).json(java.util.Map.of("error", e.getMessage()));
+            }
+        });
         liveUpdateDispatcher.registerWebSocket(app);
 
         return app;
