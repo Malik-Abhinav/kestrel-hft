@@ -9,7 +9,8 @@ This file tracks the active migration plan inside the repository so each new wor
 - Day 3 completed on March 12, 2026
 - Day 4 completed on March 13, 2026
 - Day 5 completed on March 14, 2026
-- Current next milestone: Day 6 - Latency Metrics and Replay
+- Day 6 completed on March 14, 2026
+- Current next milestone: Day 7 - Frontend Dashboard
 
 ## Working Rules
 
@@ -88,21 +89,21 @@ Completed outcome:
 
 - the system now has a live observation layer and a complete backend story through HTTP and WebSockets
 
-## Remaining Schedule
-
 ### Day 6: Latency Metrics and Replay
 
-Deliverables:
+Completed deliverables:
 
-- enqueue-to-process latency instrumentation
-- summary stats: total processed, sold, rejected, elapsed time, average latency, p95 latency
-- deterministic request-sequence capture
-- replay endpoint or replay trigger for rerunning the last drop
-- tests proving replay preserves winners and processing order
+- enqueue-to-process latency is captured per reservation result and summarized at the drop level
+- summary stats added for total processed, sold, rejected, elapsed time, average latency, and p95 latency
+- the last completed request sequence is captured for deterministic replay
+- replay is exposed through `POST /api/drop/replay`
+- tests prove replay preserves winners and request ordering
 
-Outcome:
+Completed outcome:
 
-- the project becomes a reproducible fairness demo rather than just a live animation source
+- the project now behaves like a reproducible fairness demo instead of just a live event source
+
+## Remaining Schedule
 
 ### Day 7: Frontend Dashboard
 
