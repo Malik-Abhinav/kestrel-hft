@@ -67,7 +67,7 @@ Today the implementation still consists of:
 - legacy transport and prototype engine packages that remain available during the migration
 - Dockerized local setup and Gradle-based build/test tasks
 
-This is acceptable for the current milestone because the source of truth now behaves like a reservation processor and now exposes both HTTP state and live event streaming, even though replay and metrics are still pending.
+This is acceptable for the current milestone because the source of truth now behaves like a reservation processor and now exposes HTTP state, live event streaming, replay, and summary metrics. The remaining work is centered on the frontend and presentation layers.
 
 ## Project Layout
 
@@ -114,6 +114,7 @@ docker compose up --build
 Current endpoints:
 
 - `POST /api/drop/start`
+- `POST /api/drop/replay`
 - `GET /api/drop/state`
 - `WS /ws/live-updates`
 
@@ -146,17 +147,28 @@ Inspect the latest state:
 curl http://localhost:7070/api/drop/state
 ```
 
+Replay the most recent completed drop:
+
+```bash
+curl -X POST http://localhost:7070/api/drop/replay
+```
+
 Current response shape:
 
 ```json
 {
   "dropId": "drop-1",
+  "replayOfDropId": null,
   "status": "COMPLETED",
+  "replayAvailable": true,
   "processedCount": 2,
   "soldCount": 1,
   "rejectedCount": 1,
   "totalSeats": 2,
   "availableSeats": 1,
+  "elapsedMs": 1.28,
+  "averageLatencyMs": 0.02,
+  "p95LatencyMs": 0.03,
   "seats": [
     {
       "seatId": "A1",
@@ -221,6 +233,24 @@ Environment variables:
 - `REDIS_HOST` default `localhost`
 - `REDIS_PORT` default `6379`
 - `REDIS_CHANNEL` default `kestrel:live-updates`
+
+## Metrics And Replay Status
+
+The backend now captures:
+
+- elapsed drop time
+- total processed, sold, and rejected counts
+- average reservation latency
+- p95 reservation latency
+- the last completed drop request sequence for deterministic replay
+
+Replay is currently available through:
+
+```text
+POST /api/drop/replay
+```
+
+The replay scope is a deterministic rerun of the last completed request sequence against the same seat definitions.
 
 ## Benchmarks
 
