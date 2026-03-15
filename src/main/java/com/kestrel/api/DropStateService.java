@@ -8,16 +8,26 @@ import com.kestrel.reservation.SeatDropSimulation;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 public class DropStateService {
 
     private final AtomicLong dropCounter = new AtomicLong();
+    private final Consumer<ReservationResult> resultListener;
     private DropState currentState = idleState();
+
+    public DropStateService() {
+        this(result -> { });
+    }
+
+    public DropStateService(Consumer<ReservationResult> resultListener) {
+        this.resultListener = resultListener;
+    }
 
     public synchronized DropState startDrop(StartDropRequest request) {
         StartDropRequest normalized = normalize(request);
         SeatDropSimulation simulation = new SeatDropSimulation(normalized.seats());
-        List<ReservationResult> results = simulation.run(normalized.requests());
+        List<ReservationResult> results = simulation.run(normalized.requests(), resultListener);
 
         int soldCount = (int) results.stream()
                 .filter(result -> result.status() == ReservationStatus.SOLD)
