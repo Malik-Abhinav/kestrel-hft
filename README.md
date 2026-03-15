@@ -67,7 +67,7 @@ Today the implementation still consists of:
 - legacy transport and prototype engine packages that remain available during the migration
 - Dockerized local setup and Gradle-based build/test tasks
 
-This is acceptable for the current milestone because the source of truth now behaves like a reservation processor even though the HTTP and live observation layers are still pending.
+This is acceptable for the current milestone because the source of truth now behaves like a reservation processor and now exposes both HTTP state and live event streaming, even though replay and metrics are still pending.
 
 ## Project Layout
 
@@ -88,9 +88,9 @@ Near-term architecture story:
 2. the reservation processor applies deterministic first-request-wins rules against seat inventory
 3. inventory becomes the source of truth for sold and available seats
 4. the API layer exposes the latest drop state over HTTP
-5. live observation will be added in the next milestone
+5. reservation results are published and broadcast to live observers
 
-The current implementation already follows that source-of-truth model and is now accessible through a minimal HTTP surface.
+The current implementation already follows that source-of-truth model and is now accessible through both HTTP and WebSocket surfaces.
 
 ## Build and Run
 
@@ -115,6 +115,7 @@ Current endpoints:
 
 - `POST /api/drop/start`
 - `GET /api/drop/state`
+- `WS /ws/live-updates`
 
 Start a drop with the default scenario:
 
@@ -182,7 +183,44 @@ Current response shape:
 
 ## Observation Layer Status
 
-The live observation layer is not wired into the reservation processor yet. That work is next, where reservation outcomes will be published and broadcast to connected clients.
+Reservation outcomes are now emitted as live update events during drop processing.
+
+WebSocket endpoint:
+
+```text
+ws://localhost:7070/ws/live-updates
+```
+
+When Redis-backed mode is enabled, the flow is:
+
+1. the reservation processor emits a reservation result
+2. the API publishes a live event to Redis
+3. the Redis subscriber rebroadcasts that event to connected WebSocket clients
+
+Default Redis channel in `docker compose`:
+
+```text
+kestrel:live-updates
+```
+
+Live event payload:
+
+```json
+{
+  "seatId": "A1",
+  "status": "SOLD",
+  "userId": "User_1",
+  "latencyMs": 0.015,
+  "sequence": 1
+}
+```
+
+Environment variables:
+
+- `REDIS_ENABLED` set to `true` to enable Redis-backed publication and rebroadcast
+- `REDIS_HOST` default `localhost`
+- `REDIS_PORT` default `6379`
+- `REDIS_CHANNEL` default `kestrel:live-updates`
 
 ## Benchmarks
 

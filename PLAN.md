@@ -8,7 +8,8 @@ This file tracks the active migration plan inside the repository so each new wor
 - Day 2 completed on March 11, 2026
 - Day 3 completed on March 12, 2026
 - Day 4 completed on March 13, 2026
-- Current next milestone: Day 5 - Live Event Stream
+- Day 5 completed on March 14, 2026
+- Current next milestone: Day 6 - Latency Metrics and Replay
 
 ## Working Rules
 
@@ -73,21 +74,21 @@ Completed outcome:
 
 - you can now start a drop and inspect the latest state through HTTP as a standalone backend milestone
 
-## Remaining Schedule
-
 ### Day 5: Live Event Stream
 
-Deliverables:
+Completed deliverables:
 
-- Redis-backed event publication for reservation results
-- WebSocket endpoint at `/ws/live-updates`
-- rebroadcast flow from Redis to browser clients
-- payload shape locked for live seat-sale events
-- tests for publish/broadcast behavior where practical
+- Redis-backed publication added for reservation results
+- WebSocket endpoint added at `/ws/live-updates`
+- rebroadcast flow added from Redis to connected browser clients when Redis mode is enabled
+- live seat-sale payload shape locked in the README and code
+- tests added for live update broadcasting behavior through the server
 
-Outcome:
+Completed outcome:
 
-- the system now has a live observation layer and a complete backend story
+- the system now has a live observation layer and a complete backend story through HTTP and WebSockets
+
+## Remaining Schedule
 
 ### Day 6: Latency Metrics and Replay
 
