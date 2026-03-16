@@ -10,7 +10,8 @@ This file tracks the active migration plan inside the repository so each new wor
 - Day 4 completed on March 13, 2026
 - Day 5 completed on March 14, 2026
 - Day 6 completed on March 14, 2026
-- Current next milestone: Day 7 - Frontend Dashboard
+- Day 7 started on March 15, 2026
+- Current next checkpoint: Day 7 hardening - dashboard pacing, metric accuracy, and replay UX follow-through
 
 ## Working Rules
 
@@ -119,6 +120,20 @@ Deliverables:
 Outcome:
 
 - the demo becomes visually legible in under 30 seconds
+
+Checkpoint reached on March 15, 2026:
+
+- backend now serves a dashboard at `/`
+- dashboard renders a 120-seat bowl layout
+- `Start Drop` launches a generated larger scenario from the UI
+- live WebSocket events update the seat grid and feed in buffered batches
+- route coverage added so the dashboard page is exercised in server tests
+
+Remaining follow-through before calling Day 7 fully complete:
+
+- tighten metric accuracy in the dashboard cards
+- smooth buffered playback pacing so final state does not snap in abruptly
+- decide whether replay lands in Day 7 spillover or stays fully in Day 8
 
 ### Day 8: Replay UX, Docker, and Polish
 

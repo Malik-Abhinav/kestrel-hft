@@ -2,6 +2,11 @@ package com.kestrel.api;
 
 import io.javalin.Javalin;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+
 public class KestrelApiServer {
 
     public static void main(String[] args) {
@@ -22,6 +27,7 @@ public class KestrelApiServer {
     public static Javalin createApp(DropStateService dropStateService, LiveUpdateDispatcher liveUpdateDispatcher) {
         Javalin app = Javalin.create(config -> config.showJavalinBanner = false);
 
+        app.get("/", ctx -> ctx.html(loadResource("public/index.html")));
         app.get("/api/drop/state", ctx -> ctx.json(dropStateService.currentState()));
         app.post("/api/drop/start", ctx -> {
             StartDropRequest request = ctx.body().isBlank()
@@ -41,5 +47,16 @@ public class KestrelApiServer {
         liveUpdateDispatcher.registerWebSocket(app);
 
         return app;
+    }
+
+    private static String loadResource(String path) {
+        try (InputStream inputStream = KestrelApiServer.class.getClassLoader().getResourceAsStream(path)) {
+            if (inputStream == null) {
+                throw new IllegalStateException("Missing resource: " + path);
+            }
+            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to load resource: " + path, e);
+        }
     }
 }
