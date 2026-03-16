@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kestrel Seat Drop Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ink: "#111318",
+                        ember: "#f05d23",
+                        signal: "#0f766e",
+                        paper: "#f7f1e8",
+                        steel: "#7f8ea3"
+                    },
+                    boxShadow: {
+                        stage: "0 24px 80px rgba(17, 19, 24, 0.18)"
+                    }
+                }
+            }
+        };
+    </script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/htm@3.1.1/dist/htm.umd.js"></script>
+    <style>
+        :root {
+            color-scheme: light;
+            --paper: #f7f1e8;
+            --ink: #111318;
+            --muted: #5e6775;
+            --line: rgba(17, 19, 24, 0.12);
+            --sold: #f05d23;
+            --available: #efe2d1;
+            --rejected: #dbe4ef;
+            --highlight: #ffd166;
+            --signal: #0f766e;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top left, rgba(240, 93, 35, 0.18), transparent 30%),
+                radial-gradient(circle at top right, rgba(15, 118, 110, 0.16), transparent 26%),
+                linear-gradient(180deg, #fbf7f0 0%, #f3ecdf 54%, #efe7d7 100%);
+            color: var(--ink);
+            font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+        }
+
+        .seat {
+            transition: transform 180ms ease, background-color 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+        }
+
+        .seat[data-state="AVAILABLE"] {
+            background: var(--available);
+            border-color: rgba(17, 19, 24, 0.1);
+            color: var(--muted);
+        }
+
+        .seat[data-state="SOLD"] {
+            background: rgba(240, 93, 35, 0.96);
+            border-color: rgba(240, 93, 35, 1);
+            color: #fff7f0;
+            box-shadow: 0 12px 18px rgba(240, 93, 35, 0.22);
+        }
+
+        .seat[data-state="REJECTED"] {
+            background: var(--rejected);
+            border-color: rgba(127, 142, 163, 0.35);
+            color: #314154;
+        }
+
+        .seat[data-flash="true"] {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.28);
+        }
+
+        .feed-row {
+            animation: feed-in 240ms ease both;
+        }
+
+        @keyframes feed-in {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+    const html = htm.bind(React.createElement);
+    const { useEffect, useMemo, useRef, useState } = React;
+
+    function createScenario(seed) {
+        const rows = "ABCDEFGHIJKL".split("");
+        const seatsPerRow = 10;
+        const seats = [];
+        const seatIds = [];
+        let seatIndex = 0;
+
+        rows.forEach((rowLabel, rowIndex) => {
+            for (let number = 1; number <= seatsPerRow; number += 1) {
+                const priceCents = rowIndex < 2 ? 18000 : rowIndex < 5 ? 15500 : 12500;
+                const seatId = rowLabel + number;
+                seats.push({ seatId, priceCents, rowLabel, number, seatIndex });
+                seatIds.push(seatId);
+                seatIndex += 1;
+            }
+        });
+
+        let state = seed >>> 0;
+        const nextRandom = () => {
+            state = (state * 1664525 + 1013904223) >>> 0;
+            return state / 4294967296;
+        };
+
+        const hotSeats = seatIds.filter(seatId => ["A", "B", "C"].includes(seatId[0]));
+        const requests = [];
+        const requestCount = 180;
+
+        for (let index = 0; index < requestCount; index += 1) {
+            const seatPool = nextRandom() < 0.45 ? hotSeats : seatIds;
+            const seatId = seatPool[Math.floor(nextRandom() * seatPool.length)];
+            requests.push({
+                requestId: index + 1,
+                sequence: index + 1,
+                userId: "Fan_" + String(index + 1).padStart(3, "0"),
+                seatId
+            });
+        }
+
+        return { seats, requests };
+    }
+
+    function buildLayoutFromSeatIds(seatIds) {
+        const parsedSeats = seatIds.map((seatId, seatIndex) => {
+            const match = /^([A-Z]+)(\d+)$/.exec(seatId);
+            const rowLabel = match ? match[1] : "Z";
+            const number = match ? Number(match[2]) : seatIndex + 1;
+            const rowCode = rowLabel.split("").reduce((total, char) => total * 26 + char.charCodeAt(0), 0);
+            return {
+                seatId,
+                priceCents: 15000,
+                rowLabel,
+                number,
+                seatIndex,
+                rowCode
+            };
+        });
+
+        parsedSeats.sort((left, right) => {
+            if (left.rowCode !== right.rowCode) {
+                return left.rowCode - right.rowCode;
+            }
+            return left.number - right.number;
+        });
+
+        return parsedSeats.map((seat, index) => ({
+            seatId: seat.seatId,
+            priceCents: seat.priceCents,
+            rowLabel: seat.rowLabel,
+            number: seat.number,
+            seatIndex: index
+        }));
+    }
+
+    function summarizeFromResults(results, totalSeats) {
+        const soldCount = results.filter(result => result.status === "SOLD").length;
+        return {
+            processedCount: results.length,
+            soldCount,
+            rejectedCount: results.length - soldCount,
+            availableSeats: Math.max(totalSeats - soldCount, 0)
+        };
+    }
+
+    function mergeServerSeats(baseSeats, serverSeats) {
+        const map = new Map(baseSeats.map(seat => [seat.seatId, {
+            ...seat,
+            state: "AVAILABLE",
+            userId: null,
+            winningSequence: null,
+            flash: false
+        }]));
+
+        serverSeats.forEach(seat => {
+            const current = map.get(seat.seatId);
+            if (!current) {
+                return;
+            }
+            map.set(seat.seatId, {
+                ...current,
+                state: seat.state,
+                userId: seat.reservedByUserId,
+                winningSequence: seat.winningSequence,
+                flash: false
+            });
+        });
+
+        return map;
+    }
+
+    function App() {
+        const [connection, setConnection] = useState("CONNECTING");
+        const [layout, setLayout] = useState(() => createScenario(7).seats);
+        const [seatMap, setSeatMap] = useState(() => mergeServerSeats(createScenario(7).seats, []));
+        const [feed, setFeed] = useState([]);
+        const [metrics, setMetrics] = useState({
+            processedCount: 0,
+            soldCount: 0,
+            rejectedCount: 0,
+            availableSeats: createScenario(7).seats.length
+        });
+        const [dropInfo, setDropInfo] = useState({
+            dropId: "drop-0",
+            status: "IDLE",
+            replayAvailable: false,
+            elapsedMs: 0,
+            averageLatencyMs: 0,
+            p95LatencyMs: 0
+        });
+        const [busy, setBusy] = useState(false);
+        const [error, setError] = useState("");
+
+        const socketRef = useRef(null);
+        const queueRef = useRef([]);
+        const seedRef = useRef(8);
+        const flashTimeoutsRef = useRef(new Map());
+        const finalizeTimerRef = useRef(null);
+        const finalSnapshotRef = useRef(null);
+        const receivedCountRef = useRef(0);
+        const activeScenarioRef = useRef({ seats: layout, requests: [] });
+
+        const seatRows = useMemo(() => {
+            const rows = new Map();
+            layout.forEach(seat => {
+                if (!rows.has(seat.rowLabel)) {
+                    rows.set(seat.rowLabel, []);
+                }
+                rows.get(seat.rowLabel).push(seat);
+            });
+            return Array.from(rows.entries());
+        }, [layout]);
+
+        useEffect(() => {
+            let cancelled = false;
+
+            fetch("/api/drop/state")
+                .then(response => response.json())
+                .then(state => {
+                    if (cancelled) {
+                        return;
+                    }
+                    if (state.totalSeats > 0 && state.seats.length > 0) {
+                        const serverLayout = buildLayoutFromSeatIds(state.seats.map(seat => seat.seatId));
+                        setLayout(serverLayout);
+                        activeScenarioRef.current = { seats: serverLayout, requests: [] };
+                        setSeatMap(mergeServerSeats(serverLayout, state.seats));
+                        setMetrics({
+                            processedCount: state.processedCount,
+                            soldCount: state.soldCount,
+                            rejectedCount: state.rejectedCount,
+                            availableSeats: state.availableSeats
+                        });
+                    }
+                    setDropInfo({
+                        dropId: state.dropId,
+                        status: state.status,
+                        replayAvailable: state.replayAvailable,
+                        elapsedMs: state.elapsedMs,
+                        averageLatencyMs: state.averageLatencyMs,
+                        p95LatencyMs: state.p95LatencyMs
+                    });
+                })
+                .catch(fetchError => {
+                    if (!cancelled) {
+                        setError(fetchError.message || "Failed to load current state");
+                    }
+                });
+
+            return () => {
+                cancelled = true;
+            };
+        }, []);
+
+        useEffect(() => {
+            let reconnectTimer;
+
+            const connect = () => {
+                const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+                const socket = new WebSocket(protocol + "://" + window.location.host + "/ws/live-updates");
+                socketRef.current = socket;
+                setConnection("CONNECTING");
+
+                socket.onopen = () => setConnection("LIVE");
+                socket.onclose = () => {
+                    setConnection("RECONNECTING");
+                    reconnectTimer = window.setTimeout(connect, 1500);
+                };
+                socket.onerror = () => setConnection("ERROR");
+                socket.onmessage = event => {
+                    const payload = JSON.parse(event.data);
+                    queueRef.current.push(payload);
+                };
+            };
+
+            connect();
+
+            return () => {
+                window.clearTimeout(reconnectTimer);
+                window.clearTimeout(finalizeTimerRef.current);
+                if (socketRef.current) {
+                    socketRef.current.close();
+                }
+            };
+        }, []);
+
+        useEffect(() => {
+            const interval = window.setInterval(() => {
+                if (queueRef.current.length === 0) {
+                    finalizeIfReady();
+                    return;
+                }
+
+                const batch = queueRef.current.splice(0, 4);
+                receivedCountRef.current += batch.length;
+
+                setSeatMap(current => {
+                    const next = new Map(current);
+                    batch.forEach(event => {
+                        const seat = next.get(event.seatId);
+                        if (!seat) {
+                            return;
+                        }
+                        const timeoutId = flashTimeoutsRef.current.get(event.seatId);
+                        if (timeoutId) {
+                            window.clearTimeout(timeoutId);
+                        }
+                        next.set(event.seatId, {
+                            ...seat,
+                            state: event.status === "SOLD" ? "SOLD" : seat.state,
+                            userId: event.status === "SOLD" ? event.userId : seat.userId,
+                            winningSequence: event.status === "SOLD" ? event.sequence : seat.winningSequence,
+                            flash: true
+                        });
+                        flashTimeoutsRef.current.set(event.seatId, window.setTimeout(() => {
+                            setSeatMap(mapState => {
+                                const seatState = mapState.get(event.seatId);
+                                if (!seatState) {
+                                    return mapState;
+                                }
+                                const cleared = new Map(mapState);
+                                cleared.set(event.seatId, { ...seatState, flash: false });
+                                return cleared;
+                            });
+                        }, 260));
+                    });
+                    return next;
+                });
+
+                setFeed(current => [
+                    ...batch.map(event => ({
+                        id: event.sequence + "-" + event.seatId,
+                        ...event
+                    })),
+                    ...current
+                ].slice(0, 14));
+
+                setMetrics(current => summarizeFromResults([
+                    ...Array(current.soldCount).fill({ status: "SOLD" }),
+                    ...Array(current.rejectedCount).fill({ status: "REJECTED" }),
+                    ...batch.map(event => ({ status: event.status }))
+                ], layout.length));
+
+                finalizeIfReady();
+            }, 140);
+
+            return () => window.clearInterval(interval);
+        }, [layout.length]);
+
+        function finalizeIfReady() {
+            const snapshot = finalSnapshotRef.current;
+            if (!snapshot) {
+                return;
+            }
+            if (queueRef.current.length > 0) {
+                return;
+            }
+            if (receivedCountRef.current < snapshot.processedCount) {
+                return;
+            }
+
+            setSeatMap(mergeServerSeats(activeScenarioRef.current.seats, snapshot.seats));
+            setMetrics({
+                processedCount: snapshot.processedCount,
+                soldCount: snapshot.soldCount,
+                rejectedCount: snapshot.rejectedCount,
+                availableSeats: snapshot.availableSeats
+            });
+            setDropInfo({
+                dropId: snapshot.dropId,
+                status: snapshot.status,
+                replayAvailable: snapshot.replayAvailable,
+                elapsedMs: snapshot.elapsedMs,
+                averageLatencyMs: snapshot.averageLatencyMs,
+                p95LatencyMs: snapshot.p95LatencyMs
+            });
+            setBusy(false);
+            finalSnapshotRef.current = null;
+            window.clearTimeout(finalizeTimerRef.current);
+        }
+
+        async function startDrop() {
+            setBusy(true);
+            setError("");
+            queueRef.current = [];
+            receivedCountRef.current = 0;
+            finalSnapshotRef.current = null;
+
+            const scenario = createScenario(seedRef.current);
+            seedRef.current += 1;
+            activeScenarioRef.current = scenario;
+            setLayout(scenario.seats);
+            setSeatMap(mergeServerSeats(scenario.seats, []));
+            setFeed([]);
+            setMetrics({
+                processedCount: 0,
+                soldCount: 0,
+                rejectedCount: 0,
+                availableSeats: scenario.seats.length
+            });
+            setDropInfo(current => ({
+                ...current,
+                dropId: "pending",
+                status: "RUNNING",
+                elapsedMs: 0,
+                averageLatencyMs: 0,
+                p95LatencyMs: 0
+            }));
+
+            try {
+                const response = await fetch("/api/drop/start", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        seats: scenario.seats.map(seat => ({ seatId: seat.seatId, priceCents: seat.priceCents })),
+                        requests: scenario.requests
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error("Start request failed with status " + response.status);
+                }
+
+                finalSnapshotRef.current = await response.json();
+                window.clearTimeout(finalizeTimerRef.current);
+                finalizeTimerRef.current = window.setTimeout(() => {
+                    if (finalSnapshotRef.current) {
+                        setSeatMap(mergeServerSeats(activeScenarioRef.current.seats, finalSnapshotRef.current.seats));
+                        setMetrics({
+                            processedCount: finalSnapshotRef.current.processedCount,
+                            soldCount: finalSnapshotRef.current.soldCount,
+                            rejectedCount: finalSnapshotRef.current.rejectedCount,
+                            availableSeats: finalSnapshotRef.current.availableSeats
+                        });
+                        setDropInfo({
+                            dropId: finalSnapshotRef.current.dropId,
+                            status: finalSnapshotRef.current.status,
+                            replayAvailable: finalSnapshotRef.current.replayAvailable,
+                            elapsedMs: finalSnapshotRef.current.elapsedMs,
+                            averageLatencyMs: finalSnapshotRef.current.averageLatencyMs,
+                            p95LatencyMs: finalSnapshotRef.current.p95LatencyMs
+                        });
+                        setBusy(false);
+                        finalSnapshotRef.current = null;
+                    }
+                }, 1000);
+                finalizeIfReady();
+            } catch (startError) {
+                setBusy(false);
+                setError(startError.message || "Failed to start drop");
+            }
+        }
+
+        return html`
+            <main className="min-h-screen px-4 py-6 md:px-8 lg:px-10">
+                <section className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1.25fr_0.75fr]">
+                    <div className="rounded-[2rem] border border-black/10 bg-[rgba(255,252,246,0.82)] p-5 shadow-stage backdrop-blur md:p-7">
+                        <div className="flex flex-col gap-5 border-b border-black/10 pb-5 lg:flex-row lg:items-end lg:justify-between">
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-[0.35em] text-steel">Kestrel Live Demo</p>
+                                <h1 className="mt-2 max-w-xl text-4xl font-black uppercase tracking-tight text-ink md:text-5xl">Seat Drop Dashboard</h1>
+                                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 md:text-base">
+                                    A front-row rush rendered as a deterministic seat grid. The processor decides winners. The feed shows what happened in queue order.
+                                </p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3">
+                                <div className="rounded-full border border-black/10 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600">
+                                    Socket ${connection}
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick=${startDrop}
+                                    disabled=${busy}
+                                    className="rounded-full bg-ink px-5 py-3 text-sm font-bold uppercase tracking-[0.2em] text-paper transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                                >
+                                    ${busy ? "Drop Running" : "Start Drop"}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="mt-5 grid gap-3 md:grid-cols-4">
+                            ${[
+                                ["Processed", metrics.processedCount],
+                                ["Sold", metrics.soldCount],
+                                ["Rejected", metrics.rejectedCount],
+                                ["Available", metrics.availableSeats]
+                            ].map(([label, value]) => html`
+                                <div className="rounded-3xl border border-black/10 bg-white/75 p-4">
+                                    <div className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">${label}</div>
+                                    <div className="mt-2 text-3xl font-black text-ink">${value}</div>
+                                </div>
+                            `)}
+                        </div>
+
+                        <div className="mt-6 rounded-[1.75rem] border border-black/10 bg-[#fffaf2] p-4 md:p-5">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Stage View</p>
+                                    <h2 className="mt-1 text-2xl font-black uppercase tracking-[0.18em] text-ink">Premium Bowl</h2>
+                                </div>
+                                <div className="rounded-full border border-black/10 bg-black/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-slate-600">
+                                    ${layout.length} seats
+                                </div>
+                            </div>
+
+                            <div className="mt-5 rounded-[2rem] bg-gradient-to-b from-[#1b1d24] to-[#2e3440] px-6 py-5 text-center text-sm font-semibold uppercase tracking-[0.45em] text-[#f8d8b9]">
+                                Stage
+                            </div>
+
+                            <div className="mt-5 space-y-2">
+                                ${seatRows.map(([rowLabel, seats]) => html`
+                                    <div className="grid grid-cols-[2rem_1fr] items-center gap-2 md:grid-cols-[2.5rem_1fr]">
+                                        <div className="text-center text-xs font-bold uppercase tracking-[0.3em] text-slate-500">${rowLabel}</div>
+                                        <div className="grid grid-cols-5 gap-2 sm:grid-cols-10">
+                                            ${seats.map(seat => {
+                                                const seatState = seatMap.get(seat.seatId) || { state: "AVAILABLE", flash: false };
+                                                return html`
+                                                    <div
+                                                        key=${seat.seatId}
+                                                        data-state=${seatState.state}
+                                                        data-flash=${seatState.flash ? "true" : "false"}
+                                                        className="seat rounded-xl border px-1 py-2 text-center text-[11px] font-bold tracking-[0.08em]"
+                                                        title=${seatState.userId ? seat.seatId + " reserved by " + seatState.userId : seat.seatId}
+                                                    >
+                                                        ${seat.number}
+                                                    </div>
+                                                `;
+                                            })}
+                                        </div>
+                                    </div>
+                                `)}
+                            </div>
+                        </div>
+                    </div>
+
+                    <aside className="space-y-6">
+                        <div className="rounded-[2rem] border border-black/10 bg-[rgba(17,19,24,0.94)] p-5 text-white shadow-stage">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-200/80">Drop State</p>
+                                    <h2 className="mt-2 text-2xl font-black uppercase tracking-[0.14em]">${dropInfo.dropId}</h2>
+                                </div>
+                                <div className="rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-orange-100">
+                                    ${dropInfo.status}
+                                </div>
+                            </div>
+
+                            <div className="mt-5 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+                                ${[
+                                    ["Elapsed", dropInfo.elapsedMs.toFixed(2) + " ms"],
+                                    ["Avg Latency", dropInfo.averageLatencyMs.toFixed(3) + " ms"],
+                                    ["P95 Latency", dropInfo.p95LatencyMs.toFixed(3) + " ms"]
+                                ].map(([label, value]) => html`
+                                    <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                                        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-300">${label}</div>
+                                        <div className="mt-2 text-xl font-black text-white">${value}</div>
+                                    </div>
+                                `)}
+                            </div>
+
+                            <div className="mt-4 rounded-3xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+                                Buffered rendering is active. Burst traffic is paced into readable batches without changing backend ordering.
+                            </div>
+                        </div>
+
+                        <div className="rounded-[2rem] border border-black/10 bg-white/80 p-5 shadow-stage">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Live Feed</p>
+                                    <h2 className="mt-2 text-2xl font-black uppercase tracking-[0.14em] text-ink">Seat Outcomes</h2>
+                                </div>
+                                <div className="rounded-full border border-black/10 bg-black/5 px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                                    ${feed.length} visible
+                                </div>
+                            </div>
+
+                            <div className="mt-4 space-y-3">
+                                ${feed.length === 0 ? html`
+                                    <div className="rounded-3xl border border-dashed border-black/15 bg-[#fff9f1] p-4 text-sm text-slate-500">
+                                        Start a drop to see sold seats, rejected attempts, and per-request latency arrive from the live event stream.
+                                    </div>
+                                ` : feed.map(item => html`
+                                    <div key=${item.id} className="feed-row rounded-3xl border border-black/10 bg-[#fffaf3] p-4">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div>
+                                                <div className="text-sm font-black uppercase tracking-[0.18em] text-ink">${item.seatId}</div>
+                                                <div className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">${item.userId}</div>
+                                            </div>
+                                            <div className=${"rounded-full px-3 py-2 text-xs font-bold uppercase tracking-[0.24em] " + (item.status === "SOLD" ? "bg-orange-500 text-white" : "bg-slate-200 text-slate-700")}>
+                                                ${item.status}
+                                            </div>
+                                        </div>
+                                        <div className="mt-3 flex items-center justify-between text-sm text-slate-600">
+                                            <span>Queue #${item.sequence}</span>
+                                            <span>${item.latencyMs.toFixed(3)} ms</span>
+                                        </div>
+                                    </div>
+                                `)}
+                            </div>
+
+                            ${error ? html`
+                                <div className="mt-4 rounded-3xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">${error}</div>
+                            ` : null}
+                        </div>
+                    </aside>
+                </section>
+            </main>
+        `;
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(html`<${App} />`);
+</script>
+</body>
+</html>

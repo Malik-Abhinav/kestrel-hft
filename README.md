@@ -64,10 +64,11 @@ Today the implementation still consists of:
 - an explicit seat inventory model with per-seat sold/available state
 - a reservation processor with first-request-wins allocation behavior
 - a Javalin API layer for starting a drop and inspecting state
+- a backend-served frontend dashboard at `/` with a seat grid, live feed, and summary cards
 - legacy transport and prototype engine packages that remain available during the migration
 - Dockerized local setup and Gradle-based build/test tasks
 
-This is acceptable for the current milestone because the source of truth now behaves like a reservation processor and now exposes HTTP state, live event streaming, replay, and summary metrics. The remaining work is centered on the frontend and presentation layers.
+This is acceptable for the current milestone because the source of truth now behaves like a reservation processor and now exposes HTTP state, live event streaming, replay, summary metrics, and an initial frontend checkpoint. The remaining work is centered on replay UX, pacing polish, and presentation quality.
 
 ## Project Layout
 
@@ -89,6 +90,7 @@ Near-term architecture story:
 3. inventory becomes the source of truth for sold and available seats
 4. the API layer exposes the latest drop state over HTTP
 5. reservation results are published and broadcast to live observers
+6. the browser dashboard renders seat state and buffered live outcomes from the API and WebSocket surfaces
 
 The current implementation already follows that source-of-truth model and is now accessible through both HTTP and WebSocket surfaces.
 
@@ -103,6 +105,12 @@ The current implementation already follows that source-of-truth model and is now
 
 `./gradlew run` now starts the API server on port `7070` by default.
 
+Open the dashboard at:
+
+```text
+http://localhost:7070/
+```
+
 ### Docker
 
 ```bash
@@ -113,10 +121,18 @@ docker compose up --build
 
 Current endpoints:
 
+- `GET /`
 - `POST /api/drop/start`
 - `POST /api/drop/replay`
 - `GET /api/drop/state`
 - `WS /ws/live-updates`
+
+The root route serves the current dashboard UI with:
+
+- a 120-seat bowl layout
+- a `Start Drop` action that runs a larger generated scenario
+- a buffered live feed driven by WebSocket updates
+- summary cards for processed, sold, rejected, available, elapsed time, and latency stats
 
 Start a drop with the default scenario:
 

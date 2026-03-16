@@ -28,6 +28,17 @@ public class DropApiServerTest {
     }
 
     @Test
+    public void rootEndpointServesDashboard() throws Exception {
+        withServer(app -> {
+            HttpResponse<String> response = sendRequest(app, "GET", "/", null);
+            assertEquals(200, response.statusCode());
+            assertTrue(response.body().contains("Seat Drop Dashboard"));
+            assertTrue(response.body().contains("Start Drop"));
+            assertTrue(response.body().contains("/ws/live-updates"));
+        });
+    }
+
+    @Test
     public void startEndpointRunsDropAndStateEndpointReflectsResults() throws Exception {
         withServer(app -> {
             String body = """
