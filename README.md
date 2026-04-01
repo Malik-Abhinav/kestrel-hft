@@ -68,7 +68,7 @@ Today the implementation still consists of:
 - legacy transport and prototype engine packages that remain available during the migration
 - Dockerized local setup and Gradle-based build/test tasks
 
-This is acceptable for the current milestone because the source of truth now behaves like a reservation processor and now exposes HTTP state, live event streaming, replay, summary metrics, and an initial frontend checkpoint. The remaining work is centered on replay UX, pacing polish, and presentation quality.
+This is acceptable for the current milestone because the source of truth now behaves like a reservation processor and now exposes HTTP state, live event streaming, replay, summary metrics, and a working frontend dashboard checkpoint. The remaining work is centered on replay UX, Docker integration, and presentation quality.
 
 ## Project Layout
 

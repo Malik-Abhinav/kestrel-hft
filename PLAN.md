@@ -10,8 +10,8 @@ This file tracks the active migration plan inside the repository so each new wor
 - Day 4 completed on March 13, 2026
 - Day 5 completed on March 14, 2026
 - Day 6 completed on March 14, 2026
-- Day 7 started on March 15, 2026
-- Current next checkpoint: Day 7 hardening - dashboard pacing, metric accuracy, and replay UX follow-through
+- Day 7 completed on March 16, 2026
+- Current next milestone: Day 8 - Replay UX, Docker, and Polish
 
 ## Working Rules
 
@@ -129,11 +129,11 @@ Checkpoint reached on March 15, 2026:
 - live WebSocket events update the seat grid and feed in buffered batches
 - route coverage added so the dashboard page is exercised in server tests
 
-Remaining follow-through before calling Day 7 fully complete:
+Day 7 completion notes on March 16, 2026:
 
-- tighten metric accuracy in the dashboard cards
-- smooth buffered playback pacing so final state does not snap in abruptly
-- decide whether replay lands in Day 7 spillover or stays fully in Day 8
+- dashboard counters now track processed, sold, rejected, and available totals consistently during playback
+- buffered playback pacing is steadier and no longer relies on an abrupt early final-state snap
+- replay UX remains intentionally deferred to Day 8 so the next milestone has a focused UI scope
 
 ### Day 8: Replay UX, Docker, and Polish
 
