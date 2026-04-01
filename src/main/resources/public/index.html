@@ -174,16 +174,6 @@
         }));
     }
 
-    function summarizeFromResults(results, totalSeats) {
-        const soldCount = results.filter(result => result.status === "SOLD").length;
-        return {
-            processedCount: results.length,
-            soldCount,
-            rejectedCount: results.length - soldCount,
-            availableSeats: Math.max(totalSeats - soldCount, 0)
-        };
-    }
-
     function mergeServerSeats(baseSeats, serverSeats) {
         const map = new Map(baseSeats.map(seat => [seat.seatId, {
             ...seat,
@@ -238,7 +228,7 @@
         const flashTimeoutsRef = useRef(new Map());
         const finalizeTimerRef = useRef(null);
         const finalSnapshotRef = useRef(null);
-        const receivedCountRef = useRef(0);
+        const renderedCountRef = useRef(0);
         const activeScenarioRef = useRef({ seats: layout, requests: [] });
 
         const seatRows = useMemo(() => {
@@ -332,8 +322,10 @@
                     return;
                 }
 
-                const batch = queueRef.current.splice(0, 4);
-                receivedCountRef.current += batch.length;
+                const batch = queueRef.current.splice(0, 2);
+                const soldInBatch = batch.filter(event => event.status === "SOLD").length;
+                const rejectedInBatch = batch.length - soldInBatch;
+                renderedCountRef.current += batch.length;
 
                 setSeatMap(current => {
                     const next = new Map(current);
@@ -376,14 +368,15 @@
                     ...current
                 ].slice(0, 14));
 
-                setMetrics(current => summarizeFromResults([
-                    ...Array(current.soldCount).fill({ status: "SOLD" }),
-                    ...Array(current.rejectedCount).fill({ status: "REJECTED" }),
-                    ...batch.map(event => ({ status: event.status }))
-                ], layout.length));
+                setMetrics(current => ({
+                    processedCount: current.processedCount + batch.length,
+                    soldCount: current.soldCount + soldInBatch,
+                    rejectedCount: current.rejectedCount + rejectedInBatch,
+                    availableSeats: Math.max(layout.length - (current.soldCount + soldInBatch), 0)
+                }));
 
                 finalizeIfReady();
-            }, 140);
+            }, 110);
 
             return () => window.clearInterval(interval);
         }, [layout.length]);
@@ -396,7 +389,7 @@
             if (queueRef.current.length > 0) {
                 return;
             }
-            if (receivedCountRef.current < snapshot.processedCount) {
+            if (renderedCountRef.current < snapshot.processedCount) {
                 return;
             }
 
@@ -424,8 +417,11 @@
             setBusy(true);
             setError("");
             queueRef.current = [];
-            receivedCountRef.current = 0;
+            renderedCountRef.current = 0;
             finalSnapshotRef.current = null;
+            window.clearTimeout(finalizeTimerRef.current);
+            flashTimeoutsRef.current.forEach(timeoutId => window.clearTimeout(timeoutId));
+            flashTimeoutsRef.current.clear();
 
             const scenario = createScenario(seedRef.current);
             seedRef.current += 1;
@@ -484,7 +480,7 @@
                         setBusy(false);
                         finalSnapshotRef.current = null;
                     }
-                }, 1000);
+                }, 4000);
                 finalizeIfReady();
             } catch (startError) {
                 setBusy(false);
